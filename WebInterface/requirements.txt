@@ -1,0 +1,28 @@
+# Core dependencies
+Flask==2.3.3
+numpy==1.24.3
+tensorflow==2.15.0
+opencv-python==4.7.0.72
+pillow==10.0.0
+matplotlib==3.7.2
+
+# Face detection
+mtcnn==0.1.1
+
+# Authentication & DB
+Flask-Login==0.6.2
+Flask-WTF==1.1.1
+Flask-SQLAlchemy==3.0.5
+email-validator==2.0.0
+werkzeug==2.3.7
+
+# Utils
+python-dateutil==2.8.2
+pytz==2023.3
+Werkzeug==2.3.7
+Jinja2==3.1.2
+Flask-SocketIO==5.3.5
+
+# For development
+pytest==7.4.0
+pytest-flask==1.2.0

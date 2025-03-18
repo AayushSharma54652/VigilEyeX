@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Camera - Violence Detection System</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .camera-feed {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .camera-controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .detection-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .status-safe {
+            color: #2ecc71;
+        }
+        
+        .status-danger {
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+        
+        .status-warning {
+            color: #f39c12;
+        }
+        
+        .alert-counter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+        
+        .connection-status {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 0.8rem;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">Violence Detection System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{{ url_for('camera_page') }}">Test Camera</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Camera Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view_incidents') }}">Incident Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('notification_settings') }}">Settings</a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_users') }}">User Management</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">My Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="mb-4">Test Your Camera</h2>
+        <p class="lead mb-4">
+            Use your device's camera to test the violence detection system in real-time.
+        </p>
+        
+        <div class="alert alert-info">
+            <strong>Note:</strong> Please allow camera access when prompted by your browser.
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="camera-container">
+                    <img src="{{ url_for('video_feed') }}" class="camera-feed" alt="Live Camera Feed">
+                    <div class="detection-status status-safe" id="detection-status">
+                        Safe - No Violence Detected
+                    </div>
+                    <div class="alert-counter">
+                        Incidents: <span id="alert-counter">0</span>
+                    </div>
+                    <div class="connection-status">
+                        <span id="connection-status" class="status-indicator disconnected" title="Connecting to alert system..."></span>
+                        <span class="status-text">Alert System</span>
+                    </div>
+                </div>
+                
+                <div class="camera-controls">
+                    <button class="btn btn-primary" id="start-camera">Start Camera</button>
+                    <button class="btn btn-danger" id="stop-camera" disabled>Stop Camera</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>How It Works</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    This system uses a deep learning model trained on violent activity datasets. It analyzes each frame 
+                    from your camera and determines if there are any signs of violent behavior.
+                </p>
+                <p>
+                    When violence is detected, the system will:
+                </p>
+                <ul>
+                    <li>Display a warning on the screen</li>
+                    <li>Capture images of the incident</li>
+                    <li>Identify faces in the frame (if any)</li>
+                    <li>Record the incident in the system</li>
+                </ul>
+                <p>
+                    <strong>Privacy Notice:</strong> Your camera feed is processed locally in your browser and is not stored 
+                    unless violent activity is detected.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white mt-5 py-3">
+        <div class="container text-center">
+            <p>Violence Detection System - College Major Project</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startBtn = document.getElementById('start-camera');
+            const stopBtn = document.getElementById('stop-camera');
+            const cameraFeed = document.querySelector('.camera-feed');
+            const detectionStatus = document.getElementById('detection-status');
+            
+            let isStreaming = false;
+            
+            // Initially hide the camera feed
+            cameraFeed.style.display = 'none';
+            
+            startBtn.addEventListener('click', function() {
+                if (!isStreaming) {
+                    // Show the camera feed
+                    cameraFeed.style.display = 'block';
+                    cameraFeed.src = "{{ url_for('video_feed') }}";
+                    isStreaming = true;
+                    
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    
+                    // Listen for violence status updates (in a real implementation, 
+                    // you would use WebSockets or a polling mechanism)
+                    checkViolenceStatus();
+                }
+            });
+            
+            stopBtn.addEventListener('click', function() {
+                if (isStreaming) {
+                    // Hide the camera feed
+                    cameraFeed.style.display = 'none';
+                    cameraFeed.src = "";
+                    isStreaming = false;
+                    
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    
+                    // Reset status
+                    detectionStatus.className = 'detection-status status-safe';
+                    detectionStatus.textContent = 'Safe - No Violence Detected';
+                }
+            });
+            
+            function checkViolenceStatus() {
+                // Use the status API to get real updates
+                if (isStreaming) {
+                    fetch('/api/status')
+                        .then(response => response.json())
+                        .then(data => {
+                            // Update UI based on status from server
+                            if (data.status === 'alert') {
+                                detectionStatus.className = 'detection-status status-danger';
+                                detectionStatus.textContent = 'ALERT - Violence Detected!';
+                                
+                                // Play audio alert if supported
+                                if (!window.alertAudio) {
+                                    window.alertAudio = new Audio('/static/alert.mp3');
+                                }
+                                window.alertAudio.play().catch(e => console.log('Audio play failed:', e));
+                                
+                                // Vibrate if supported
+                                if ('vibrate' in navigator) {
+                                    navigator.vibrate([200, 100, 200]);
+                                }
+                            } else if (data.status === 'warning') {
+                                detectionStatus.className = 'detection-status status-warning';
+                                detectionStatus.textContent = 'WARNING - Potential Violence';
+                            } else {
+                                detectionStatus.className = 'detection-status status-safe';
+                                detectionStatus.textContent = 'Safe - No Violence Detected';
+                            }
+                            
+                            // Update incident count if available
+                            if (data.alert_count) {
+                                const alertCounter = document.getElementById('alert-counter');
+                                if (alertCounter) {
+                                    alertCounter.textContent = data.alert_count;
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching status:', error);
+                        })
+                        .finally(() => {
+                            // Check again after a delay regardless of success/failure
+                            setTimeout(checkViolenceStatus, 2000);
+                        });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
