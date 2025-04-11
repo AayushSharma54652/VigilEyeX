@@ -1,6 +1,6 @@
 # VigilEyeX: AI-Powered Real-Time Violence Detection System
 
-<div align="center">
+<div align="center" >
   <h2>Making public spaces safer through intelligent surveillance</h2>
 </div>
 
